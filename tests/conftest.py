@@ -66,3 +66,9 @@ def h_principal():
     }
 
     return headers
+
+from unittest.mock import Mock
+
+@pytest.fixture
+def mocker():
+    return Mock()

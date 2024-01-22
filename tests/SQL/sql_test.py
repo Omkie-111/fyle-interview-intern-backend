@@ -62,6 +62,7 @@ def test_get_assignments_in_various_states():
 
     sql_result = db.session.execute(text(sql)).fetchall()
     for itr, result in enumerate(expected_result):
+        print(f"Expected: {result[0]}: {result[1]}, Actual: {sql_result[itr][0]}: {sql_result[itr][1]}")
         assert result[0] == sql_result[itr][0]
         assert result[1] == sql_result[itr][1]
 
@@ -72,17 +73,17 @@ def test_get_assignments_in_various_states():
     submitted_assignment: Assignment = Assignment.filter(Assignment.state == AssignmentStateEnum.SUBMITTED).first()
     submitted_assignment.state = AssignmentStateEnum.GRADED
     submitted_assignment.grade = GradeEnum.C
-
+    
     # Flush the changes to the database session
     db.session.flush()
     # Commit the changes to the database
     db.session.commit()
 
-    # Execute the SQL query again and compare the updated result with the expected result
     sql_result = db.session.execute(text(sql)).fetchall()
     for itr, result in enumerate(expected_result):
         assert result[0] == sql_result[itr][0]
         assert result[1] == sql_result[itr][1]
+
 
 
 def test_get_grade_A_assignments_for_teacher_with_max_grading():

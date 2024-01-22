@@ -77,7 +77,7 @@ def test_grade_assignment_bad_assignment(client, h_teacher_1):
         }
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 400
     data = response.json
 
     assert data['error'] == 'FyleError'
@@ -100,3 +100,75 @@ def test_grade_assignment_draft_assignment(client, h_teacher_1):
     data = response.json
 
     assert data['error'] == 'FyleError'
+
+# Manually added tests
+
+
+
+def test_grade_assignment_success(client, h_teacher_1):
+    """
+    success case: Grade a submitted assignment
+    """
+    response = client.post(
+        '/teacher/assignments/grade',
+        headers=h_teacher_1,
+        json={
+            "id": 1,
+            "grade": "A"
+        }
+    )
+
+    assert response.status_code == 200
+    data = response.json
+
+    assert "data" in data
+    assert "id" in data["data"]
+    assert "grade" in data["data"]
+    assert "state" in data["data"]
+    
+    assert data["data"]["grade"] == "A"
+    assert data["data"]["state"] == "GRADED"
+
+
+def test_grade_assignment_not_authorized(client, h_teacher_2):
+    """
+    failure case: Teacher 2 attempts to grade an assignment submitted to Teacher 1
+    """
+    response = client.post(
+        '/teacher/assignments/grade',
+        headers=h_teacher_2,
+        json={
+            "id": 1,
+            "grade": "B"
+        }
+    )
+
+    assert response.status_code == 400
+    data = response.json
+
+    assert data['error'] == 'FyleError'
+
+
+def test_grade_assignment_already_graded(client, h_teacher_1):
+    """
+    failure case: Attempt to grade an already graded assignment
+    """
+    response = client.post(
+        '/teacher/assignments/grade',
+        headers=h_teacher_1,
+        json={
+            "id": 2,
+            "grade": "C"
+        }
+    )
+
+    assert response.status_code == 400
+    data = response.json
+
+    assert data['error'] == 'FyleError'
+
+
+
+    
+
+

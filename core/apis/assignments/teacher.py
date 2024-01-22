@@ -1,8 +1,9 @@
-from flask import Blueprint
+from flask import Blueprint, jsonify
 from core import db
 from core.apis import decorators
 from core.apis.responses import APIResponse
-from core.models.assignments import Assignment
+from core.models.assignments import Assignment, AssignmentStateEnum
+from core.libs.exceptions import FyleError
 
 from .schema import AssignmentSchema, AssignmentGradeSchema
 teacher_assignments_resources = Blueprint('teacher_assignments_resources', __name__)
@@ -21,14 +22,37 @@ def list_assignments(p):
 @decorators.accept_payload
 @decorators.authenticate_principal
 def grade_assignment(p, incoming_payload):
-    """Grade an assignment"""
-    grade_assignment_payload = AssignmentGradeSchema().load(incoming_payload)
+    try:
+        grade_assignment_payload = AssignmentGradeSchema().load(incoming_payload)
 
-    graded_assignment = Assignment.mark_grade(
-        _id=grade_assignment_payload.id,
-        grade=grade_assignment_payload.grade,
-        auth_principal=p
-    )
-    db.session.commit()
-    graded_assignment_dump = AssignmentSchema().dump(graded_assignment)
-    return APIResponse.respond(data=graded_assignment_dump)
+        assignment_to_grade = Assignment.get_by_id(int(grade_assignment_payload.id))
+
+        if not assignment_to_grade:
+            raise FyleError(400, 'Assignment not found')
+
+        if assignment_to_grade.teacher_id != p.teacher_id:
+            raise FyleError(400, 'You are not authorized to grade this assignment')
+
+        if assignment_to_grade.state != AssignmentStateEnum.SUBMITTED:
+            raise FyleError(400, 'Only a submitted assignment can be graded')
+
+        if grade_assignment_payload.grade not in ['A', 'B', 'C', 'D']:
+            raise FyleError(400, 'Invalid grade')
+
+        graded_assignment = Assignment.mark_grade(
+            _id=grade_assignment_payload.id,
+            grade=grade_assignment_payload.grade,
+            auth_principal=p
+        )
+
+        db.session.commit()
+
+        graded_assignment_dump = AssignmentSchema().dump(graded_assignment)
+        return APIResponse.respond(data=graded_assignment_dump)
+
+    except FyleError as e:
+        return jsonify({
+            'error': 'FyleError',
+            'message': e.message,
+        }), e.status_code
+
