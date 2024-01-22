@@ -1,6 +1,6 @@
 # Fyle
 
-This is and assignment project given by Fyle. It can be run using Docker for easy deployment.
+This is an assignment project given by Fyle. It can be run using Docker for easy deployment.
 
 ## Prerequisites
 
